@@ -3,7 +3,32 @@ Simple classification problem: classify type of cancer(benign-malignant) based o
 The dataset information can be found here: https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.names.
 The dataset can be found here: https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29.
 
-The accuracy of two different approaches was evaluated. The logistic regression method has reached the 0.96 accuracy on test dataset. More details on the evaluation of the method can be found in the code.
+The accuracy of two different approaches was evaluated. The logistic regression method has reached the 0.98 accuracy on test dataset.
+
+Report of Logisic Regression method on our dataset:
+
+Confusion Matrix
+                  [[110 3]
+                   [2 107]]
+We have 110+107 correct predictions and 2+3 incorrect predictions.
+ 
+Accuracy of logistic regression classifier on test set: 0.98
+              precision    recall  f1-score   support
+
+           b       0.98      0.97      0.98       113
+           m       0.97      0.98      0.98       109
+
+   micro avg       0.98      0.98      0.98       222
+   macro avg       0.98      0.98      0.98       222
+weighted avg       0.98      0.98      0.98       222
+
+Report legenda from Sklearn:
+- The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. The precision is intuitively the ability of the classifier to not label a sample as positive if it is negative.
+- The recall is the ratio tp / (tp + fn) where tp is the number of true positives and fn the number of false negatives. The recall is intuitively the ability of the classifier to find all the positive samples.
+- The F-beta score can be interpreted as a weighted harmonic mean of the precision and recall, where an F-beta score reaches its best value at 1 and worst score at 0.
+- The F-beta score weights the recall more than the precision by a factor of beta. beta = 1.0 means recall and precision are equally important.
+- The support is the number of occurrences of each class in y_test.
+
 
 References for the code and the methods:
 1. "The practice of computing using Python", 2nd Edition, by William F. Punch (Author), Richard Enbody (Author). ISBN-13: 978-0134380315.
