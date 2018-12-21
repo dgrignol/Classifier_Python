@@ -8,12 +8,15 @@ The accuracy of two different approaches was evaluated. The logistic regression 
 Report of Logisic Regression method on our dataset:
 
 Confusion Matrix
-                  [[110 3]
-                   [2 107]]
+
+               [[110   3 ]
+                [ 2   107]]
+                   
 We have 110+107 correct predictions and 2+3 incorrect predictions.
  
 Accuracy of logistic regression classifier on test set: 0.98
-              precision    recall  f1-score   support
+
+                  precision    recall  f1-score   support
 
                b       0.98      0.97      0.98       113
                m       0.97      0.98      0.98       109 
