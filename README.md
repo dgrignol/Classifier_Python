@@ -15,12 +15,12 @@ We have 110+107 correct predictions and 2+3 incorrect predictions.
 Accuracy of logistic regression classifier on test set: 0.98
               precision    recall  f1-score   support
 
-           b       0.98      0.97      0.98       113
-           m       0.97      0.98      0.98       109
-
-   micro avg       0.98      0.98      0.98       222
-   macro avg       0.98      0.98      0.98       222
-weighted avg       0.98      0.98      0.98       222
+               b       0.98      0.97      0.98       113
+               m       0.97      0.98      0.98       109 
+           
+       micro avg       0.98      0.98      0.98       222
+       macro avg       0.98      0.98      0.98       222
+    weighted avg       0.98      0.98      0.98       222
 
 Report legenda from Sklearn:
 - The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. The precision is intuitively the ability of the classifier to not label a sample as positive if it is negative.
