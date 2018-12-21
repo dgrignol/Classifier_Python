@@ -1,0 +1,190 @@
+''' The problem is to determine, based on the the tumor attributes, whether the tumor is
+malignant or benign. The data provided by University of Wisconsin consist of a list of
+about 700 patients, each with nine tumor attributes provided by the oncologist who examined
+the biopsy, as well as whether that patient was ultimately diagnosed as having a benign
+or malignant tumor. '''
+
+# usage:
+# import -name of the module-
+# -name of the module-.main()
+# or run all the code in the console and then call main()
+# in the main() function you can see the structure of the solution for the problem
+
+def download_sets_data(url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data'):
+    # import the dataset from an the following url:
+    # https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data
+    import urllib.request  # the lib that handles the url stuff
+
+    breast_cancer_data = urllib.request.urlopen(url)
+    # divide the file into two parts: one for the training, one for the test.
+    output_file = open("breast-cancer-training.txt", "w")  # set output training file for writing
+    output_file2 = open("breast-cancer-test.txt", "w")  # set output test file for writing
+
+    for index, line in enumerate(breast_cancer_data):  # files are iterable
+        line = line.decode(
+            "utf-8")  # the data are encoded in byte-like data set so you have to encode it(usally they are encoded in UTF-8)
+
+        if index % 2 == 0:
+            print(line, file=output_file, end='')  # end='' altrimenti mette un '/n' (new line) in più(quello di print)
+        else:
+            print(line, file=output_file2, end='')
+
+    # always close all the file after you opened it (with the method used above the file should be closed automatically
+    # but could result still open for some other program. It is raccomanded always to close it.)
+    breast_cancer_data.close()
+    output_file.close()
+    output_file2.close()
+    return "breast-cancer-test.txt" , "breast-cancer-training.txt"
+
+def make_data_set(training_file_name):
+    # I am choosing a list of tuple as output: [(Id-str, b/m-str, 1-int, 2, 3, ..., 9)...(...)]
+    # inizialize list for output
+    training_set_list = []
+
+    # open the file and store it
+    reader = open(training_file_name)
+    # loop over the lines
+    for line in reader:
+        line = line.strip()
+        # deal with an exception (missing values are represented ad '?', I choose to ignore
+        # the patients with some missing value). Could be interesting to explore other way to deal with M.V.
+        if '?' in line:
+            continue
+        line = line.split(',')
+        # for every line parse it into 11 data
+        id = line[0] # id of patient
+        condition = 'b' if line[-1] == '2' else 'm' # Outcome: diagnosis
+        list_of_values = line[1:-1] # Attributes
+        # for every data convert the format to the one I want
+        ### they are just fine i think
+        # store in a tuple and add to the output training_set list
+        training_set_list.append((id, condition, [int(value) for value in list_of_values]))
+    # return the training_set list
+    return training_set_list
+
+def train_classifier(training_set_list):
+    ''' Return a list containing the separator values '''
+    # set the variables count(we need it later for the first mean)
+    countB = 0
+    countM = 0
+
+    # set lists of values for B and M that we need to store the values sums
+    list_values_B = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    list_values_M = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    # loop over tuples(so we take values from every subj)
+    for tuple in training_set_list:
+
+        # see if it's begnign or malignant
+        # test
+        # print(tuple[1] == 'b')
+        if tuple[1] == 'b':
+            countB += 1
+            # loop over values
+            for index, (value, partial_sum) in enumerate(zip(tuple[2], list_values_B)):
+                list_values_B[index] = value + partial_sum
+        else:
+            countM += 1
+            for index, (value, partial_sum) in enumerate(zip(tuple[2], list_values_M)):
+                list_values_M[index] = value + partial_sum
+    # print(list_values_B, 'list_values_B')
+    # print(list_values_M, 'list_values_M')
+
+    # do the mean of values
+    mean_list_B = [value / countB for value in list_values_B]
+    mean_list_M = [value / countM for value in list_values_M]
+
+    # do the mean of the means of values
+    separator_values = [(valueB + valueM) / 2 for valueB, valueM in zip(mean_list_B, mean_list_M)]
+
+    return separator_values
+
+def classify_test_set_list(test_set_list, classifier_list):
+    ''' Classify test list based on classifier list, return a lists of tuples in which every tuples
+        is (ID-str-, numero di valori che indicano benigno, numero valori maligno, diagnosis)    '''
+
+    # set a list to store the tuples in output
+    result_list = []
+
+    # loop over tuples in my test list to compare values with my classifier
+    for tuple in test_set_list:
+
+        # set the malign and benign counter for the results tuples
+        mal_count = 0
+        ben_count = 0
+
+        # now loop over the list in the tuple:
+        for value_patients, separator in zip(tuple[2], classifier_list):
+            # se il valore del paziente è maggiore del valore di separazione aumenta il mal_count di 1, else aumenta the other
+            if value_patients > separator:
+                mal_count += 1
+            else:
+                ben_count += 1
+
+        # assegno i valori ad una nuova tuple
+        result_tuple = (tuple[0], ben_count, mal_count, tuple[1])
+
+        # append result tuple to the result list of tuples
+        result_list.append(result_tuple)
+
+    return result_list
+
+def report_results(result_list):
+    ''' The function take as data in input a list of tuples, in which every tuples is: (ID, ben_counter, mal_counter,
+        actual diagnosis in the form 'b' or 'm'). The function print the total number of cases and the number of
+        inaccuracies of the classifier. '''
+
+    # set counter of correct (and uncorrect diagnosis, the two of them only to check the result with number unc + corr == tot )
+    correct_diagnosis = 0
+    # uncorrect_diagnosis = 0 # you need it if you want to build an extra check
+
+    # loop over tuples to test the correctness of the decision criterion
+    for tuple in result_list:
+        # if number of mal > of number of ben store 'm', else store 'b'
+        if tuple[1] > tuple[2]:
+            single_result = 'b'
+        else:
+            single_result = 'm'
+
+        # if the single result == the actual diagnosis then increase correct_counter
+        if single_result == tuple[3]:
+            correct_diagnosis += 1
+
+    # find number of cases and number of inaccuracies to report result
+    total_number_cases = len(result_list)
+    num_inaccuracies = total_number_cases - correct_diagnosis
+    percent_accuracy = (correct_diagnosis*100)/total_number_cases
+
+    # report result
+    print(f'Of {total_number_cases} total number of cases there were {num_inaccuracies} inaccuracies. Accuracy {percent_accuracy}%')
+
+def main():
+
+    print("Downloading and setting datasets...")
+    (file_breast_cancer_training, file_breast_cancer_testing) = download_sets_data()
+
+    print("Reading in training data...")
+    training_file_name = file_breast_cancer_training
+    training_set_list = make_data_set(training_file_name)
+    print("Done reading training data.\n")
+
+    print("Training classifier..." )
+    classifier_list = train_classifier(training_set_list)
+    print("Done training classifier.\n")
+
+    print("Reading in test data...")
+    test_file_name = file_breast_cancer_testing
+    test_set_list = make_data_set(test_file_name)
+    print("Done reading test data.\n")
+
+    print("Classifying records...")
+    result_list = classify_test_set_list(test_set_list, classifier_list)
+    print("")
+    print("one classifying. \n")
+
+    report_results(result_list)
+
+    print("Program finished")
+
+main()
+input('<<PRESS ENTER to exit>>') # Let the user see what the program printed
