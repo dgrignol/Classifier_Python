@@ -1,0 +1,170 @@
+''' The problem is to determine, based on the the tumor attributes, whether the tumor is
+malignant or benign. The data provided by University of Wisconsin consist of a list of
+about 700 patients, each with nine tumor attributes provided by the oncologist who examined
+the biopsy, as well as whether that patient was ultimately diagnosed as having a benign
+or malignant tumor. '''
+
+# import several modules you need
+
+import pandas as pd
+import numpy as np
+from sklearn import preprocessing
+import matplotlib.pyplot as plt
+plt.rc("font", size=14)
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+import seaborn as sns
+
+
+# Import file
+import urllib.request  # the lib that handles the url stuff
+url = 'https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/breast-cancer-wisconsin.data'
+breast_cancer_data = urllib.request.urlopen(url)
+output_file = open("breast-cancer.txt", "w")
+
+for index, line in enumerate(breast_cancer_data):  # files are iterable
+    line = line.decode(
+        "utf-8")  # the data are encoded in byte-like data set so you have to encode it(usally they are encoded in UTF-8)
+    if '?' not in line: # drop patients with missing values (again could be interesting to try other way to deal with M.V.)
+        print(line, file=output_file, end='')  # end='' altrimenti mette un a capo in più(quello di print)
+
+breast_cancer_data.close()
+output_file.close()
+
+data = pd.read_csv('breast-cancer.txt', sep=",", header=0, engine='python') # create dataframe from csv with Pandas
+data.columns = ['id','a1','a2','a3','a4','a5','a6','a7','a8','a9','outcome'] # creates columns names
+print(data.shape)
+data = data.dropna() # is a good practice to try to apply dropna() but always inspect data before and after. (in this case has no effect)
+print(data.shape)
+print(list(data.columns))
+data.loc[data['outcome'] == 4, 'outcome'] = 'm' # assign more readable labels to outcome
+data.loc[data['outcome'] == 2, 'outcome'] = 'b'
+data # inspect result
+
+# matplotlib inline, as follows you can visually inspect which variables could be important for your outcome
+# (in this example case all of them)
+# pd.crosstab(data.a8,data.outcome).plot(kind='bar')
+# plt.title('Diagnosis frequency per Attribute 8 values')
+# plt.xlabel('Attribute 8')
+# plt.ylabel('Diagnosis')
+
+
+mal_data = data.loc[data['outcome'] == 'm', :]
+ben_data = data.loc[data['outcome'] == 'b', :]
+len(mal_data)*100 /(len(ben_data)+len(mal_data)) # percentuale maligni
+len(ben_data)*100 /(len(ben_data)+len(mal_data)) # percentuale benigni
+
+# voglio bilanciare i dati, voglio avere stesso numero di outcome maligno e benigno, provo SMOTE
+# SMOTE: per la categoria con minor numero di osservazioni la oversamplo diciamo del doppio
+# prendo ogni osservazione e computo gli N nearest neighbours (in questo caso N = 1 perchè voglio solo raddoppiare il sample)
+# trovo punto medio tra il punto e il suo vicino più prossimo e questo è il mio nuovo dato
+# SCELTE DISCUTIBILI:
+# 1. uso distanza di euclide. 2. il punto medio lo computo con la formula xC =(xA+xB)/2 e così per tutte e 9 le dimensioni
+# 2.0. le dimensioni sono costituite dagli attributi che sono su scala a intervalli. 2.01. Scelgo di tenere i risultati as float number.
+# 3. un problema fondamentale potrebbe essere relato alla scala di misura degli attributi
+
+from scipy.spatial import distance
+
+indiceVero = 0
+dataNew = pd.DataFrame(columns=['id','a1','a2','a3','a4','a5','a6','a7','a8','a9','outcome'])
+
+for index, row in mal_data.iterrows(): # per le osservazioni che ho in maligni
+    distanzaMinima = 10000 # setta distanza minima (molto alta per aggiornare a prima comparazione nell'if)
+    a1, a2, a3, a4, a5, a6, a7, a8, a9 = row[1:-1] # prendi i valori attributi
+    A_point = (a1, a2, a3, a4, a5, a6, a7, a8, a9) # crea tupla con i valori
+    for index1, row1 in mal_data.iterrows(): # per ogni altra osservazione devo computare la distanza, quindi
+        a1, a2, a3, a4, a5, a6, a7, a8, a9 = row1[1:-1] # prendo valori altra osservazione
+        B_point = (a1, a2, a3, a4, a5, a6, a7, a8, a9) # salvo in tupla attributi
+        distanzaPunto = distance.euclidean(A_point, B_point) # calcolo distanza dal punto di riferimento(definito in loop sopra)
+        if distanzaPunto < distanzaMinima and distanzaPunto == 0: # se la distanza calcolata è minore di quelle calcolate fin'ora (e non è 0 cioè distanza punto da se stesso)
+            distanzaMinima = distanzaPunto # assegno questa distanza alla distanza minima
+            indicePunto = index1 # e cosa più impo salvo in che posizione è il punto con la distanza minima dal mio riferimento
+    # esco dal for piuù basso e usando l'index trovo l'osservazione che mi serve ora
+    a1, a2, a3, a4, a5, a6, a7, a8, a9 = mal_data.loc[indicePunto][1:-1]
+    B_point = (a1, a2, a3, a4, a5, a6, a7, a8, a9) # ora abbiamo attributi punto B
+    puntoMedio = []
+    for a, b in zip(A_point,B_point): # computa punto medio
+        puntoMedio.append((a+b)/2)
+
+    puntoMedio = [900000] + puntoMedio + ['m'] # modifica lista in accordo con le colonne del dataframe con id fittizio = 900000
+    puntoMedio = tuple(puntoMedio) # rendi una tupla
+    dataNew.loc[indiceVero] = puntoMedio # aggiungi al nuovo dataframe dei punti creati
+
+    indiceVero += 1 # aumenta indice loop "più alto"
+
+
+
+#togliamo dati in più da nuovi dati
+from random import choice
+while len(ben_data) != (len(dataNew)+len(mal_data)):
+    dataNew = dataNew.drop([choice(list(dataNew.index.values))])
+
+# aggiungo dati maligni nuovi a vecchi maligni
+mal_data_plus_new = mal_data.append(dataNew) # ignore_index=True per numerare gli indici con senso
+
+len(mal_data_plus_new)*100 /(len(ben_data)+len(mal_data_plus_new)) # percentuale maligni
+len(ben_data)*100 /(len(ben_data)+len(mal_data_plus_new))
+
+# merge all data
+all_data = ben_data.append(mal_data_plus_new) # ignore_index=True per numerare gli indici con senso
+
+# devo trasformare le variabili in dummy
+# per farlo prima devo agregare i valori degli attributi in "classi", uso 3 classi?
+# raggruppa in low, medium and high bins. 0-3.33; 3.33-6.66; 6.66-10.
+all_data.columns
+
+# facciamo così:
+# per la lunghezza del dataframe(numero righe)
+
+for attribute in all_data.columns: # itera sulle colonne
+    if attribute not in 'idoutcome': # solo se la colonna è un atttributo, modifica i valori
+        all_data.loc[all_data[attribute] <= 3.33, [attribute]] = 0
+        all_data.loc[(all_data[attribute] <= 6.66)& (all_data[attribute] > 3.33), [attribute]] = 1
+        all_data.loc[all_data[attribute] > 6.66, [attribute]] = 2
+
+    # OK ora trasformali in int e poi str
+
+for column in all_data.columns: # int
+    if column not in 'idoutcome':
+        all_data[column] = all_data[column].apply(int)
+
+for column in all_data.columns: # str
+    if column not in 'idoutcome':
+        all_data[column] = all_data[column].apply(str)
+
+# crea dummy variables
+all_data1 = pd.get_dummies(all_data, columns =['a1','a2','a3','a4','a5','a6','a7','a8','a9'])
+all_data1.drop(all_data1.columns[[0]], axis=1, inplace=True) # togli id number
+
+# plot correlation between variables, there should not be correlation, otherwise it could be  a problem for the model assumption
+# (actually the result looks really good)
+# a way to see if the dependent variables are correlated
+# sns.heatmap(all_data1.corr())
+# plt.show()
+
+
+X = all_data1.iloc[:,1:]
+y = all_data1.iloc[:,0]
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0) # create train and test set
+
+# fit model
+classifier = LogisticRegression(random_state=0)
+classifier.fit(X_train, y_train)
+
+# confusion matrix?
+y_pred = classifier.predict(X_test)
+from sklearn.metrics import confusion_matrix
+confusion_matrix = confusion_matrix(y_test, y_pred)
+print(confusion_matrix)
+
+print('Accuracy of logistic regression classifier on test set: {:.2f}'.format(classifier.score(X_test, y_test))) # print accuracy of classifier
+
+from sklearn.metrics import classification_report
+print(classification_report(y_test, y_pred))
+
+# report description from Sklearn:
+# The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. The precision is intuitively the ability of the classifier to not label a sample as positive if it is negative.
+# The recall is the ratio tp / (tp + fn) where tp is the number of true positives and fn the number of false negatives. The recall is intuitively the ability of the classifier to find all the positive samples.
+# The F-beta score can be interpreted as a weighted harmonic mean of the precision and recall, where an F-beta score reaches its best value at 1 and worst score at 0.
+# The F-beta score weights the recall more than the precision by a factor of beta. beta = 1.0 means recall and precision are equally important.
+# The support is the number of occurrences of each class in y_test.
