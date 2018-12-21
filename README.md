@@ -3,7 +3,14 @@ Simple classification problem: classify type of cancer(benign-malignant) based o
 The dataset information can be found here: https://archive.ics.uci.edu/ml/machine-learning-databases/breast-cancer-wisconsin/wdbc.names.
 The dataset can be found here: https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29.
 
-The accuracy of two different approaches was evaluated. The logistic regression method has reached the 0.98 accuracy on test dataset.
+The accuracy of two different approaches was evaluated.
+
+## Mean_mean_method
+
+The first method reached an accuracy of 0.94. Of 345 total number of cases in the test set there were 20 inaccuracies.
+
+## Logistic regression
+The logistic regression method reached the 0.98 accuracy on test dataset.
 
 Report of Logisic Regression method on our dataset:
 
