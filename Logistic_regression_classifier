@@ -26,7 +26,7 @@ for index, line in enumerate(breast_cancer_data):  # files are iterable
     line = line.decode(
         "utf-8")  # the data are encoded in byte-like data set so you have to encode it(usally they are encoded in UTF-8)
     if '?' not in line: # drop patients with missing values (again could be interesting to try other way to deal with M.V.)
-        print(line, file=output_file, end='')  # end='' altrimenti mette un a capo in più(quello di print)
+        print(line, file=output_file, end='')  # end='' otherwise add new line(the print() one)
 
 breast_cancer_data.close()
 output_file.close()
@@ -51,13 +51,14 @@ data # inspect result
 
 mal_data = data.loc[data['outcome'] == 'm', :]
 ben_data = data.loc[data['outcome'] == 'b', :]
-len(mal_data)*100 /(len(ben_data)+len(mal_data)) # percentuale maligni
-len(ben_data)*100 /(len(ben_data)+len(mal_data)) # percentuale benigni
+len(mal_data)*100 /(len(ben_data)+len(mal_data)) # malignant %
+len(ben_data)*100 /(len(ben_data)+len(mal_data)) # benign %
 
-# voglio bilanciare i dati, voglio avere stesso numero di outcome maligno e benigno, provo SMOTE
-# SMOTE: per la categoria con minor numero di osservazioni la oversamplo diciamo del doppio
-# prendo ogni osservazione e computo gli N nearest neighbours (in questo caso N = 1 perchè voglio solo raddoppiare il sample)
-# trovo punto medio tra il punto e il suo vicino più prossimo e questo è il mio nuovo dato
+# Balancing data, we want the same number of benign and malignant outcome: I try SMOTE
+# SMOTE: oversample the category with less observations (doubling up the observations)
+# take every observation and compute N nearest neighbours ( in this case N = 1 to double up the sample)
+# compute the mean point between the point and the nearest neighbour: that's the new observation.
+# 
 # SCELTE DISCUTIBILI:
 # 1. uso distanza di euclide. 2. il punto medio lo computo con la formula xC =(xA+xB)/2 e così per tutte e 9 le dimensioni
 # 2.0. le dimensioni sono costituite dagli attributi che sono su scala a intervalli. 2.01. Scelgo di tenere i risultati as float number.
